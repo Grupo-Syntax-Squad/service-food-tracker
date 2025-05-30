@@ -50,16 +50,12 @@ class User(Base):  # type: ignore[valid-type, misc]
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String)
-    cpf_cnpj: Mapped[str] = mapped_column(String, unique=True)
     email: Mapped[str] = mapped_column(String, unique=True)
     password: Mapped[str] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
-    address: Mapped[str] = mapped_column(String)
-    phone: Mapped[str] = mapped_column(String)
-    email_verified: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
 
     pets = relationship(
@@ -71,28 +67,16 @@ class User(Base):  # type: ignore[valid-type, misc]
     )
 
     @staticmethod
-    def get_user_by_id(session: Session, user_id: int) -> User | None:  # noqa: F821
-        query = select(User).where(User.id == user_id)
-        result = session.execute(query)
-        return result.scalars().first()
-
-    @staticmethod
     def add_user(
         session: Session,
         name: str,
-        cpf_cnpj: str,
         email: str,
-        password: str,
-        address: str,
-        phone: str,
+        password: str
     ) -> None:
         user = User(
             name=name,
-            cpf_cnpj=cpf_cnpj,
             email=email,
-            password=password,
-            address=address,
-            phone=phone,
+            password=password
         )
         session.add(user)
         session.commit()
@@ -102,29 +86,17 @@ class User(Base):  # type: ignore[valid-type, misc]
         session: Session,
         user_id: int,
         name: str | None = None,
-        cpf_cnpj: str | None = None,
         email: str | None = None,
-        password: str | None = None,
-        address: str | None = None,
-        phone: str | None = None,
-        email_verified: bool | None = None,
+        password: str | None = None
     ) -> User | None:
-        user = session.query(User).get(user_id)
+        user: User | None = session.query(User).get(user_id)
         if user:
             if name:
                 user.name = name
-            if cpf_cnpj:
-                user.cpf_cnpj = cpf_cnpj
             if email:
                 user.email = email
             if password:
                 user.password = password
-            if address:
-                user.address = address
-            if phone:
-                user.phone = phone
-            if email_verified:
-                user.email_verified = email_verified
             session.commit()
             return user
         return None
