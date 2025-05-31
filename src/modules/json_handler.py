@@ -19,7 +19,7 @@ class JSONHandler:
 
         try:
             with open(self._file_path, "r") as f:
-                content = json.load(f)
+                content: list[Any] = json.load(f)
                 self._log.info("File %s read successfully", self._file_path)
                 return content
         except json.JSONDecodeError:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Sequence
 
 from sqlalchemy import (
     ARRAY,
@@ -23,6 +24,8 @@ from sqlalchemy.orm import (
     mapped_column,
     relationship,
 )
+
+from src.schemas.user import SchemaCreateUser, SchemaUpdateUser
 
 Base = declarative_base()
 
@@ -71,28 +74,20 @@ class User(Base):  # type: ignore[valid-type, misc]
     )
 
     @staticmethod
-    def get_user_by_id(session: Session, user_id: int) -> User | None:  # noqa: F821
+    def get_user_by_id(session: Session, user_id: int) -> User | None:
         query = select(User).where(User.id == user_id)
         result = session.execute(query)
         return result.scalars().first()
 
     @staticmethod
-    def add_user(
-        session: Session,
-        name: str,
-        cpf_cnpj: str,
-        email: str,
-        password: str,
-        address: str,
-        phone: str,
-    ) -> None:
+    def add_user(session: Session, new_user: SchemaCreateUser) -> None:
         user = User(
-            name=name,
-            cpf_cnpj=cpf_cnpj,
-            email=email,
-            password=password,
-            address=address,
-            phone=phone,
+            name=new_user.name,
+            cpf_cnpj=new_user.cpf_cnpj,
+            email=new_user.email,
+            password=new_user.password,
+            address=new_user.address,
+            phone=new_user.phone,
         )
         session.add(user)
         session.commit()
@@ -100,31 +95,25 @@ class User(Base):  # type: ignore[valid-type, misc]
     @staticmethod
     def update_user(
         session: Session,
-        user_id: int,
-        name: str | None = None,
-        cpf_cnpj: str | None = None,
-        email: str | None = None,
-        password: str | None = None,
-        address: str | None = None,
-        phone: str | None = None,
-        email_verified: bool | None = None,
+        update_user: SchemaUpdateUser,
     ) -> User | None:
-        user = session.query(User).get(user_id)
+        user: User | None = session.query(User).get(update_user.id)
         if user:
-            if name:
-                user.name = name
-            if cpf_cnpj:
-                user.cpf_cnpj = cpf_cnpj
-            if email:
-                user.email = email
-            if password:
-                user.password = password
-            if address:
-                user.address = address
-            if phone:
-                user.phone = phone
-            if email_verified:
-                user.email_verified = email_verified
+            if update_user.name:
+                user.name = update_user.name
+            if update_user.cpf_cnpj:
+                user.cpf_cnpj = update_user.cpf_cnpj
+            if update_user.email:
+                user.email = update_user.email
+            if update_user.password:
+                user.password = update_user.password
+            if update_user.address:
+                user.address = update_user.address
+            if update_user.phone:
+                user.phone = update_user.phone
+            if update_user.email_verified:
+                user.email_verified = update_user.email_verified
+            session.add(user)
             session.commit()
             return user
         return None
@@ -176,7 +165,7 @@ class Pet(Base):  # type: ignore[valid-type, misc]
         return result.scalars().first()
 
     @staticmethod
-    def get_list_pet_by_user_id(session: Session, user_id: int) -> User | None:  # noqa: F821
+    def get_list_pet_by_user_id(session: Session, user_id: int) -> Sequence[Pet]:  # noqa: F821
         query = select(Pet).where(Pet.users == user_id)
         result = session.execute(query)
         return result.scalars().all()
@@ -204,9 +193,10 @@ class Pet(Base):  # type: ignore[valid-type, misc]
                 pet.users.append(user)
         session.add(pet)
         session.commit()
+        return pet
 
     @staticmethod
-    def update_pet(session: Session, pet_id: int, **kwargs) -> Pet | None:
+    def update_pet(session: Session, pet_id: int, **kwargs) -> Pet | None:  # type: ignore[no-untyped-def]
         pet = session.get(Pet, pet_id)
         if not pet:
             return None
@@ -222,6 +212,8 @@ class Pet(Base):  # type: ignore[valid-type, misc]
         if pet:
             session.delete(pet)
             session.commit()
+            return True
+        return False
 
 
 class ScheduledFeeding(Base):  # type: ignore[valid-type, misc]

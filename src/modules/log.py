@@ -26,17 +26,17 @@ class Log:
                 file_handler.setFormatter(formatter)
                 self._logger.addHandler(file_handler)
 
-    def debug(self, message: Any, *args, **kwargs) -> None:
+    def debug(self, message: Any, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
         self._logger.debug(message, *args, **kwargs, stacklevel=2)
 
-    def info(self, message: Any, *args, **kwargs) -> None:
+    def info(self, message: Any, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
         self._logger.info(message, *args, **kwargs, stacklevel=2)
 
-    def warning(self, message: Any, *args, **kwargs) -> None:
+    def warning(self, message: Any, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
         self._logger.warning(message, *args, **kwargs, stacklevel=2)
 
-    def error(self, message: Any, *args, **kwargs) -> None:
+    def error(self, message: Any, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
         self._logger.error(message, *args, **kwargs, stacklevel=2)
 
-    def critical(self, message: Any, *args, **kwargs) -> None:
+    def critical(self, message: Any, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
         self._logger.critical(message, *args, **kwargs, stacklevel=2)
