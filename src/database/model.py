@@ -23,11 +23,12 @@ from sqlalchemy.orm import (
     declarative_base,
     mapped_column,
     relationship,
+    DeclarativeBase,
 )
 
 from src.schemas.user import SchemaCreateUser, SchemaUpdateUser
 
-Base = declarative_base()
+Base: DeclarativeBase = declarative_base()
 
 
 class Example(Base):  # type: ignore[valid-type, misc]
@@ -222,9 +223,8 @@ class ScheduledFeeding(Base):  # type: ignore[valid-type, misc]
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     feeding_interval: Mapped[int] = mapped_column(Integer)
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
-
-    user = relationship("User")
-    pet = relationship("Pet")
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    pet_id: Mapped[int] = mapped_column(ForeignKey("pet.id"))
 
     @staticmethod
     def add_scheduled_feeding(

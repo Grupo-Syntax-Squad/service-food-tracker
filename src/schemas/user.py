@@ -1,6 +1,23 @@
 from pydantic import BaseModel
 
 
+class RequestCreateUser(BaseModel):
+    name: str
+    cpf_cnpj: str
+    email: str
+    password: str
+    address: str
+    phone: str
+
+
+class ResponseGetUsers(BaseModel):
+    name: str
+    cpf_cnpj: str
+    email: str
+    address: str
+    phone: str
+
+
 class SchemaCreateUser(BaseModel):
     name: str
     cpf_cnpj: str
