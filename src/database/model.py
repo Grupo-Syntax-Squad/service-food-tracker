@@ -6,13 +6,11 @@ from typing import Sequence
 from sqlalchemy import (
     ARRAY,
     Boolean,
-    Column,
     DateTime,
     Float,
     ForeignKey,
     Integer,
     String,
-    Table,
     func,
     select,
     text,
@@ -22,7 +20,6 @@ from sqlalchemy.orm import (
     Session,
     declarative_base,
     mapped_column,
-    relationship,
     DeclarativeBase,
 )
 
