@@ -41,14 +41,6 @@ class Example(Base):  # type: ignore[valid-type, misc]
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_onupdate=func.now())
 
 
-user_pet_association = Table(
-    "user_pet",
-    Base.metadata,
-    Column("user_id", Integer, ForeignKey("user.id"), primary_key=True),
-    Column("pet_id", Integer, ForeignKey("pet.id"), primary_key=True),
-)
-
-
 class User(Base):  # type: ignore[valid-type, misc]
     __tablename__ = "user"
 
@@ -65,14 +57,6 @@ class User(Base):  # type: ignore[valid-type, misc]
     phone: Mapped[str] = mapped_column(String)
     email_verified: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
-
-    pets = relationship(
-        "Pet",
-        secondary=user_pet_association,
-        back_populates="user",
-        cascade="all, delete",
-        lazy="joined",
-    )
 
     @staticmethod
     def get_user_by_id(session: Session, user_id: int) -> User | None:
@@ -151,14 +135,6 @@ class Pet(Base):  # type: ignore[valid-type, misc]
     castred: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
 
-    user = relationship(
-        "User",
-        secondary=user_pet_association,
-        back_populates="pets",
-        cascade="all, delete",
-        lazy="joined",
-    )
-
     @staticmethod
     def get_pet_by_id(session: Session, pet_id: int) -> Pet | None:  # noqa: F821
         query = select(Pet).where(Pet.id == pet_id)
@@ -217,26 +193,31 @@ class Pet(Base):  # type: ignore[valid-type, misc]
         return False
 
 
+class UserPet(Base):  # type: ignore[valid-type, misc]
+    __tablename__ = "user_pet"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    pet_id: Mapped[int] = mapped_column(ForeignKey("pet.id"))
+
+
 class ScheduledFeeding(Base):  # type: ignore[valid-type, misc]
     __tablename__ = "scheduled_feeding"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     feeding_interval: Mapped[int] = mapped_column(Integer)
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
-    pet_id: Mapped[int] = mapped_column(ForeignKey("pet.id"))
+    user_pet_id: Mapped[int] = mapped_column(ForeignKey("user_pet.id"))
 
     @staticmethod
     def add_scheduled_feeding(
         session: Session,
-        user_id: int,
-        pet_id: int,
+        user_pet_id: int,
         feeding_interval: int,
     ) -> None:
         scheduled_feeding = ScheduledFeeding(
-            user=user_id,
-            pet=pet_id,
             feeding_interval=feeding_interval,
+            user_pet_id=user_pet_id,
         )
         session.add(scheduled_feeding)
         session.commit()
