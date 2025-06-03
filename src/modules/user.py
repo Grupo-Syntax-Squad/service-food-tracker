@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from src.database.model import User
+from src.database.model import Pet, User
 from src.modules.log import Log
 from src.schemas.common import BasicResponse
 from src.schemas.user import (
@@ -109,6 +109,26 @@ class UpdateUser:
         ).execute()
         for field in normalized_fields:
             setattr(self._request, field, getattr(normalized_data, field))
+        self.__validate_pets()
+
+    def __validate_pets(self) -> None:
+        if self._request.pets is not None:
+            database_pets_ids = set([pet.id for pet in self.__get_pets()])
+            request_pets_set = set(self._request.pets)
+            missing_pets = [
+                str(pet_id) for pet_id in (request_pets_set - database_pets_ids)
+            ]
+            if missing_pets:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Os pets com os ids: {','.join(missing_pets)} não existem",
+                )
+
+    def __get_pets(self) -> list[Pet]:
+        result = self._session.execute(
+            select(Pet).where(Pet.id.in_(self._request.pets))  # type: ignore[arg-type]
+        )
+        return list(result.scalars().all())
 
     def _get_user(self) -> None:
         result = (
@@ -133,7 +153,7 @@ class UpdateUser:
             self._user.address = self._request.address
         if self._request.password:
             self._user.password = self._request.password
-        # TODO: Update user pets
+        # TODO: The validation of existing pets in the database has already been carried out, now it is necessary to update the previously linked pets to disabled, and to enabled the disabled ones if they exist, otherwise create a new record.
         self._session.add(self._user)
         self._session.flush()
 
