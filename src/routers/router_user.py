@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from src.database import DatabaseConnection
-from src.modules.user import CreateUser, GetUsers
+from src.modules.user import CreateUser, GetUsers, UpdateUser
 from src.schemas.common import BasicResponse
-from src.schemas.user import RequestCreateUser, ResponseGetUsers
+from src.schemas.user import RequestCreateUser, RequestUpdateUser, ResponseGetUsers
 
 
 router = APIRouter(prefix="/users", tags=["User"])
@@ -16,6 +16,14 @@ def create_user(
     session: Session = Depends(DatabaseConnection().get_db_session),
 ) -> BasicResponse[None]:
     return CreateUser(session, request).execute()
+
+
+@router.put("/")
+def update_user(
+    request: RequestUpdateUser,
+    session: Session = Depends(DatabaseConnection().get_db_session),
+) -> BasicResponse[None]:
+    return UpdateUser(session, request).execute()
 
 
 @router.get("/")
