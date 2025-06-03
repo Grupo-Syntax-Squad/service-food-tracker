@@ -37,14 +37,6 @@ class Example(Base):  # type: ignore[valid-type, misc]
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_onupdate=func.now())
 
 
-user_pet_association = Table(
-    "user_pet",
-    Base.metadata,
-    Column("user_id", Integer, ForeignKey("user.id"), primary_key=True),
-    Column("pet_id", Integer, ForeignKey("pet.id"), primary_key=True),
-)
-
-
 class User(Base):  # type: ignore[valid-type, misc]
     __tablename__ = "user"
 
@@ -58,67 +50,7 @@ class User(Base):  # type: ignore[valid-type, misc]
     )
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
 
-    pets = relationship(
-        "Pet",
-        secondary=user_pet_association,
-        back_populates="user",
-        cascade="all, delete",
-        lazy="joined",
-    )
-
-    @staticmethod
-    def add_user(
-        session: Session,
-        name: str,
-        email: str,
-        password: str
-    ) -> None:
-        user = User(
-            name=name,
-            email=email,
-            password=password
-        )
-        session.add(user)
-        session.commit()
-
-    @staticmethod
-    def update_user(
-        session: Session,
-        user_id: int,
-        name: str | None = None,
-        email: str | None = None,
-        password: str | None = None
-    ) -> User | None:
-        user: User | None = session.query(User).get(user_id)
-        if user:
-            if name:
-                user.name = name
-            if email:
-                user.email = email
-            if password:
-                user.password = password
-            session.commit()
-            return user
-        return None
-
-    @staticmethod
-    def delete_user(session: Session, user_id: int) -> None:
-        user = select(User).where(User.id == user_id)
-        result = session.execute(user).scalars().first()
-        if result:
-            scheduled = select(ScheduledFeeding).where(ScheduledFeeding.user == user_id)
-            result_scheduled = session.execute(scheduled).scalars().all()
-            for scheduled in result_scheduled:
-                session.delete(scheduled)
-                session.commit()
-            for pet in result.pets:
-                select_pet = select(Pet).where(Pet.id == pet.id)
-                result_pet = session.execute(select_pet).scalars().first()
-                if result_pet:
-                    session.delete(result_pet)
-                    session.commit()
-            session.delete(result)
-            session.commit()
+    pets = relationship("Pet", back_populates="owner", cascade="all, delete", lazy="joined")
 
 
 class Pet(Base):  # type: ignore[valid-type, misc]
@@ -126,32 +58,15 @@ class Pet(Base):  # type: ignore[valid-type, misc]
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String)
-    breed: Mapped[str] = mapped_column(String)
-    weight: Mapped[float] = mapped_column(Float)
-    color: Mapped[str] = mapped_column(String)
+    breed: Mapped[str] = mapped_column(String, nullable=True)
+    weight: Mapped[float] = mapped_column(Float, nullable=True)
+    color: Mapped[str] = mapped_column(String, nullable=True)
     kind: Mapped[list[int]] = mapped_column(ARRAY(Integer))
     castred: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
 
-    user = relationship(
-        "User",
-        secondary=user_pet_association,
-        back_populates="pets",
-        cascade="all, delete",
-        lazy="joined",
-    )
-
-    @staticmethod
-    def get_pet_by_id(session: Session, pet_id: int) -> Pet | None:  # noqa: F821
-        query = select(Pet).where(Pet.id == pet_id)
-        result = session.execute(query)
-        return result.scalars().first()
-
-    @staticmethod
-    def get_list_pet_by_user_id(session: Session, user_id: int) -> User | None:  # noqa: F821
-        query = select(Pet).where(Pet.users == user_id)
-        result = session.execute(query)
-        return result.scalars().all()
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+    owner = relationship("User", back_populates="pets", lazy="joined")
 
     @staticmethod
     def add_pet(

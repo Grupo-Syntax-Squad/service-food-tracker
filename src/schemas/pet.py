@@ -1,4 +1,3 @@
-from datetime import datetime
 from pydantic import BaseModel
 
 class GetPetResponse(BaseModel):
@@ -16,6 +15,19 @@ class GetPetResponse(BaseModel):
         from_attributes = True
 
 class PostPet(BaseModel):
+    user_id: int
+    name: str
+    breed: str | None = None
+    weight: float | None = None
+    color: str | None = None
+    kind: int
+    castred: bool | None = None
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+class PutPet(BaseModel):
     name: str
     breed: str | None
     weight: float | None
@@ -26,3 +38,4 @@ class PostPet(BaseModel):
     class Config:
         orm_mode = True
         from_attributes = True
+
