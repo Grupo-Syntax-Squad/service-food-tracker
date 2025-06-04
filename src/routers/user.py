@@ -30,7 +30,7 @@ def get_user(
 @router.post("/")
 def create_user(
     request: PostUser,
-    current_user: CurrentUser = Depends(Auth.get_current_user),
+    #current_user: CurrentUser = Depends(Auth.get_current_user),
     session: Session = Depends(get_db),
 ) -> BasicResponse[None]:
     return CreateUser(request=request, session=session)

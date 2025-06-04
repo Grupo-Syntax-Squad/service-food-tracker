@@ -4,11 +4,9 @@ from sqlalchemy.orm import Session
 from auth.auth_utils import Auth
 from database import get_db
 from modules.pet import CreatePet, GetPet
-from modules.user import CreateUser, GetUser, UpdateUser
 from schemas.auth import CurrentUser
 from schemas.basic_response import BasicResponse
 from schemas.pet import PostPet
-from schemas.user import PostUser
 
 
 router = APIRouter(prefix="/pets", tags=["Pets"])
@@ -43,4 +41,4 @@ def update_pet(
     current_user: CurrentUser = Depends(Auth.get_current_user),
     session: Session = Depends(get_db),
 ) -> BasicResponse[None]:
-    return UpdateUser(id, request, session)
+    return UpdatePet(id, request, session)
