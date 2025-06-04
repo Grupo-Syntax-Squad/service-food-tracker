@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from src.database import DatabaseConnection
-from src.modules.user import CreateUser, GetUsers, UpdateUser
+from src.modules.user import CreateUser, DeleteUser, GetUsers, UpdateUser
 from src.schemas.common import BasicResponse
 from src.schemas.user import RequestCreateUser, RequestUpdateUser, ResponseGetUsers
 
@@ -31,3 +31,11 @@ def get_users(
     session: Session = Depends(DatabaseConnection().get_db_session),
 ) -> BasicResponse[list[ResponseGetUsers]]:
     return GetUsers(session).execute()
+
+
+@router.delete("/")
+def delete_user(
+    user_id: int = Query(),
+    session: Session = Depends(DatabaseConnection().get_db_session),
+) -> BasicResponse[None]:
+    return DeleteUser(session, user_id).execute()

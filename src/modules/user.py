@@ -1,6 +1,6 @@
 import re
 from fastapi import HTTPException, status
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
 from src.database.model import Pet, User
@@ -32,7 +32,7 @@ class CreateUser:
         except HTTPException as e:
             raise e
         except Exception as e:
-            self._log.error("Error creating new user: %s", e)
+            self._log.error("Error creating new user: %s", str(e))
             raise HTTPException(
                 detail="Erro interno",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -88,9 +88,11 @@ class UpdateUser:
             self._log.info("User updated successfully")
             return BasicResponse()
         except HTTPException as e:
+            self._session.rollback()
             raise e
         except Exception as e:
-            self._log.error("Error updating user: %s", e)
+            self._session.rollback()
+            self._log.error("Error updating user: %s", str(e))
             raise HTTPException(
                 detail="Erro interno",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -153,7 +155,10 @@ class UpdateUser:
             self._user.address = self._request.address
         if self._request.password:
             self._user.password = self._request.password
-        # TODO: The validation of existing pets in the database has already been carried out, now it is necessary to update the previously linked pets to disabled, and to enabled the disabled ones if they exist, otherwise create a new record.
+        if self._request.pets is not None:
+            UserPetsHandler(
+                self._session, self._request.id, self._request.pets
+            ).execute()
         self._session.add(self._user)
         self._session.flush()
 
@@ -247,6 +252,58 @@ class UserDataValidator:
             raise ValueError("Número de telefone inválido")
 
 
+class UserPetsHandler:
+    def __init__(self, session: Session, user_id: int, new_pets_list: list[int]):
+        self._log = Log()
+        self._session = session
+        self._user_id = user_id
+        self._new_pets_list = set(new_pets_list)
+
+    def execute(self) -> None:
+        try:
+            self._log.info("Trying to handler user pets")
+            enabled_user_pets, disabled_user_pets = self._get_all_user_pet_relations()
+
+            enable_user_pets = disabled_user_pets & self._new_pets_list
+            disable_user_pets = enabled_user_pets - self._new_pets_list
+
+            self._enable_user_pets(enable_user_pets)
+            self._disable_user_pets(disable_user_pets)
+            self._log.info("Handled user pets successfully")
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            self._log.error("Error handling user pets: %s", str(e))
+            raise e
+
+    def _get_all_user_pet_relations(self) -> tuple[set[int], set[int]]:
+        all_user_pets = (
+            self._session.execute(select(Pet).where(Pet.user_id == self._user_id))
+            .scalars()
+            .all()
+        )
+
+        enabled_user_pets_ids = set(
+            [pet.id for pet in all_user_pets if pet.enabled is True]
+        )
+        disabled_user_pets_ids = set(
+            [pet.id for pet in all_user_pets if pet.enabled is False]
+        )
+        return (enabled_user_pets_ids, disabled_user_pets_ids)
+
+    def _enable_user_pets(self, pet_ids: set[int]) -> None:
+        self._session.execute(
+            update(Pet).where(Pet.id.in_(pet_ids)).values(enabled=True)
+        )
+        self._session.flush()
+
+    def _disable_user_pets(self, pet_ids: set[int]) -> None:
+        self._session.execute(
+            update(Pet).where(Pet.id.in_(pet_ids)).values(enabled=False)
+        )
+        self._session.flush()
+
+
 class GetUsers:
     def __init__(self, session: Session) -> None:
         self._log = Log()
@@ -268,7 +325,7 @@ class GetUsers:
             )
 
     def _get_users(self) -> None:
-        result = self._session.execute(select(User))
+        result = self._session.execute(select(User).where(User.enabled))
         self._users = [
             ResponseGetUsers(
                 id=user.id,
@@ -280,3 +337,38 @@ class GetUsers:
             )
             for user in result.unique().scalars().all()
         ]
+
+
+class DeleteUser:
+    def __init__(self, session: Session, user_id: int):
+        self._log = Log()
+        self._session = session
+        self._user_id = user_id
+
+    def execute(self) -> BasicResponse[None]:
+        try:
+            self._log.info("Trying to delete user")
+            self._get_user()
+            self._user.enabled = False
+            self._session.commit()
+            self._log.info("User deleted successfully")
+            return BasicResponse()
+        except HTTPException as e:
+            self._session.rollback()
+            raise e
+        except Exception as e:
+            self._session.rollback()
+            self._log.error("Error deleting user: %s", str(e))
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro interno"
+            )
+
+    def _get_user(self) -> None:
+        result = self._session.execute(
+            select(User).where(User.id == self._user_id)
+        ).scalar_one_or_none()
+        if result is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado"
+            )
+        self._user = result
