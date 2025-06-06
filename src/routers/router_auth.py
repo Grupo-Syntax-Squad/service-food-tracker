@@ -1,9 +1,7 @@
-from typing import Annotated
-from fastapi import APIRouter, Depends
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter
 
 from src.modules.auth_handler import AuthHandler
-from src.schemas.auth import Token
+from src.schemas.auth import RequestLogin, Token
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -11,6 +9,6 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/login")
 def login(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    request: RequestLogin,
 ) -> Token:
-    return AuthHandler().login(form_data.username, form_data.password)
+    return AuthHandler().login(request.email, request.password)

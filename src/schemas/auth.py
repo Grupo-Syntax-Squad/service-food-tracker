@@ -12,3 +12,8 @@ class UserDataToken(BaseModel):
     username: str
     email: str
     exp: datetime
+
+
+class RequestLogin(BaseModel):
+    email: str
+    password: str
