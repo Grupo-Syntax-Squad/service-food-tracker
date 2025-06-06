@@ -9,7 +9,7 @@ settings = Settings()
 
 class DatabaseConnection:
     def __init__(self) -> None:
-        self._engine = create_engine(settings.database_url, echo=True)
+        self._engine = create_engine(settings.database_url)
         self._sessionmaker = sessionmaker(bind=self._engine)
 
     def get_db_session(self) -> Generator[Session, None, None]:

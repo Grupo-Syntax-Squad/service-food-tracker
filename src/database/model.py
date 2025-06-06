@@ -44,13 +44,13 @@ class User(Base):  # type: ignore[valid-type, misc]
     cpf_cnpj: Mapped[str] = mapped_column(String, unique=True)
     email: Mapped[str] = mapped_column(String, unique=True)
     password: Mapped[str] = mapped_column(String)
+    address: Mapped[str] = mapped_column(String)
+    phone: Mapped[str] = mapped_column(String)
+    email_verified: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
-    address: Mapped[str] = mapped_column(String)
-    phone: Mapped[str] = mapped_column(String)
-    email_verified: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
 
     @staticmethod
