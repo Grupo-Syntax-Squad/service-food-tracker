@@ -1,43 +1,67 @@
-import json
-import os
-from datetime import datetime
-
+from contextlib import asynccontextmanager
+from typing import Any, AsyncIterator
 from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi.responses import RedirectResponse
+from fastapi.openapi.utils import get_openapi
 
-app = FastAPI()
+from config import Settings
+from src.modules.lifespan import LifespanHandler
+from src.schemas.basic_response import BasicResponse
+from src.schemas.detection import Detection, DetectionRequest
+from src.modules.json_handler import JSONHandler
+from src.routers import router_user, router_auth, pet, user
 
-DATA_FILE = "data.json"
+settings = Settings()
 
 
-class Detection(BaseModel):
-    timestamp: str
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    LifespanHandler().execute()
+    yield None
 
 
-def save_in_json(data: dict):
-    if os.path.exists(DATA_FILE):
-        try:
-            with open(DATA_FILE, "r") as f:
-                content = json.load(f)
-        except json.JSONDecodeError:
-            content = []
-    else:
-        content = []
+app = FastAPI(lifespan=lifespan)
 
-    content.append(data)
 
-    with open(DATA_FILE, "w") as f:
-        json.dump(content, f, indent=4)
+def custom_openapi() -> dict[str, Any]:
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="Food Tracker API",
+        version="1.0.0",
+        description="API for pets food tracking",
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        "bearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }
+    }
+    for path in openapi_schema["paths"].values():
+        for method in path.values():
+            method["security"] = [{"bearerAuth": []}]
+    app.openapi_schema = openapi_schema
+    return openapi_schema
+
+
+app.openapi = custom_openapi  # type: ignore[method-assign]
+
+
+@app.get("/", include_in_schema=False)
+def index() -> RedirectResponse:
+    return RedirectResponse(url="/docs")
 
 
 @app.post("/detectar")
-async def detectar(detection: Detection):
-    entry = {
-        "timestamp": detection.timestamp,
-        "received_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    }
-    save_in_json(entry)
-    return {"status": "ok", "data": entry}
+async def detectar(request: DetectionRequest) -> BasicResponse[Detection]:
+    detection = Detection(timestamp=request.timestamp)
+    JSONHandler(settings.json_file_path).save_in_json(detection)
+    return BasicResponse(data=detection)
 
 
-#  uvicorn main:app --reload --host 0.0.0.0 --port 8000
+app.include_router(router_user.router)
+app.include_router(router_auth.router)
+app.include_router(pet.router)
+app.include_router(user.router)

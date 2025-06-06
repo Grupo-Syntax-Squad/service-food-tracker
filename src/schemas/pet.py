@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 
+
 class GetPetResponse(BaseModel):
-    id: int
+    pet_id: int
     name: str
     breed: str
     weight: float
@@ -10,9 +11,6 @@ class GetPetResponse(BaseModel):
     castred: bool
     enabled: bool
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
 
 class PostPet(BaseModel):
     user_id: int
@@ -26,6 +24,7 @@ class PostPet(BaseModel):
     class Config:
         orm_mode = True
         from_attributes = True
+
 
 class PutPet(BaseModel):
     name: str

@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel
 
 
@@ -6,11 +7,8 @@ class Token(BaseModel):
     token_type: str
 
 
-class CurrentUser(BaseModel):
-    id: int
+class UserDataToken(BaseModel):
+    user_id: int
+    username: str
     email: str
-    name: str
-    enabled: bool
-
-    class Config:
-        from_attributes = True
+    exp: datetime
