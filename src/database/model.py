@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, time
 
 from sqlalchemy import (
     ARRAY,
@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Time,
     func,
     text,
 )
@@ -85,6 +86,6 @@ class ScheduledFeeding(Base):  # type: ignore[valid-type, misc]
     __tablename__ = "scheduled_feeding"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    feeding_interval: Mapped[int] = mapped_column(Integer)
+    feeding_time: Mapped[time] = mapped_column(Time)
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
     pet_id: Mapped[int] = mapped_column(ForeignKey("pet.id"))

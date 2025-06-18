@@ -9,7 +9,7 @@ from src.modules.lifespan import LifespanHandler
 from src.schemas.common import BasicResponse
 from src.schemas.detection import Detection, DetectionRequest
 from src.modules.json_handler import JSONHandler
-from src.routers import router_user, router_auth
+from src.routers import router_scheduled_feeding, router_user, router_auth
 
 settings = Settings()
 
@@ -63,3 +63,4 @@ async def detectar(request: DetectionRequest) -> BasicResponse[Detection]:
 
 app.include_router(router_user.router)
 app.include_router(router_auth.router)
+app.include_router(router_scheduled_feeding.router)
