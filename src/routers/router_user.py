@@ -1,4 +1,5 @@
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -9,13 +10,11 @@ from src.schemas.auth import UserDataToken
 from src.schemas.common import BasicResponse
 from src.schemas.user import RequestCreateUser, RequestUpdateUser, ResponseGetUsers
 
-
 router = APIRouter(prefix="/users", tags=["User"])
 
 
 @router.post("/")
 def create_user(
-    user: Annotated[UserDataToken, Depends(AuthHandler().get_current_user)],
     request: RequestCreateUser,
     session: Session = Depends(DatabaseConnection().get_db_session),
 ) -> BasicResponse[None]:
