@@ -42,6 +42,7 @@ class LifespanHandler:
             password=AuthHandler()._hash_password(settings.default_user_password),
             address="Default user address",
             phone=74994939050,
+            device_token=settings.default_user_device_token,
         )
         self._session.add(new_default_user)
         self._session.commit()

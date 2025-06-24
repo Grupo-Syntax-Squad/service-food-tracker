@@ -1,4 +1,5 @@
-from datetime import time
+import datetime
+
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -45,7 +46,7 @@ class CreateScheduledFeeding:
         return result
 
     def _verify_if_pet_scheduled_feeding_already_exists(
-        self, pet: Pet, feeding_time: time
+        self, pet: Pet, feeding_time: datetime.time
     ) -> None:
         result: ScheduledFeeding | None = (
             self._session.execute(
@@ -62,7 +63,16 @@ class CreateScheduledFeeding:
                 detail="A alimentação agendada já existe",
             )
 
-    def _create_scheduled_feeding(self, pet: Pet, feeding_time: time) -> None:
+    def _create_scheduled_feeding(self, pet: Pet, feeding_time: datetime.time) -> None:
         scheduled_feeding = ScheduledFeeding(pet_id=pet.id, feeding_time=feeding_time)
         self._session.add(scheduled_feeding)
         self._session.flush()
+
+
+# TODO: Implementar essa classe futuramente
+class ScheduledFeedingManager:
+    def __init__(self, session: Session) -> None:
+        self._log = Log()
+        self._session = session
+
+    def execute(self) -> None: ...

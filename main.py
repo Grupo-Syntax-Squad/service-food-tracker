@@ -1,17 +1,20 @@
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import RedirectResponse
 from fastapi.openapi.utils import get_openapi
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-from config import Settings
+from config import settings
+from src.database import DatabaseConnection
+from src.database.model import Pet
 from src.modules.lifespan import LifespanHandler
+from src.modules.notificator import UserNotificator
 from src.schemas.common import BasicResponse
 from src.schemas.detection import Detection, DetectionRequest
 from src.modules.json_handler import JSONHandler
 from src.routers import router_scheduled_feeding, router_user, router_auth
-
-settings = Settings()
 
 
 @asynccontextmanager
@@ -55,9 +58,20 @@ def index() -> RedirectResponse:
 
 
 @app.post("/detectar")
-async def detectar(request: DetectionRequest) -> BasicResponse[Detection]:
+async def detectar(
+    request: DetectionRequest,
+    session: Session = Depends(DatabaseConnection().get_db_session),
+) -> BasicResponse[Detection]:
     detection = Detection(timestamp=request.timestamp)
     JSONHandler(settings.json_file_path).save_in_json(detection)
+    pet = session.execute(
+        select(Pet).where(Pet.id == request.pet_id)
+    ).scalar_one_or_none()
+    if pet is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Pet não encontrado"
+        )
+    UserNotificator(session).notificate(pet)
     return BasicResponse(data=detection)
 
 

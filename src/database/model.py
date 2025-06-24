@@ -48,6 +48,7 @@ class User(Base):  # type: ignore[valid-type, misc]
     address: Mapped[str] = mapped_column(String)
     phone: Mapped[str] = mapped_column(String)
     email_verified: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
+    device_token: Mapped[str] = mapped_column(String, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()

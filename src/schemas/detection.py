@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class DetectionRequest(BaseModel):
     timestamp: datetime
+    pet_id: int
 
 
 class Detection(BaseModel):

@@ -11,5 +11,10 @@ class Settings(BaseSettings):
     access_token_expires_minutes: int
     default_user_email: str
     default_user_password: str
+    default_user_device_token: str
+    firebase_credentials_path: str
 
     model_config = SettingsConfigDict(env_file=".env")
+
+
+settings = Settings()
