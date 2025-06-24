@@ -1,15 +1,16 @@
 import re
 from fastapi import HTTPException, status
+from src.schemas.pet import GetPetResponse, PostPet
 from sqlalchemy import or_, select, update
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from src.database.model import Pet, User
 from src.modules.log import Log
-from src.schemas.common import BasicResponse
+from src.schemas.basic_response import BasicResponse
 from src.schemas.user import (
     RequestCreateUser,
     RequestUpdateUser,
-    ResponseGetUsers,
+    ResponseGetUser,
     SchemaCreateUser,
     SchemaUserDataValidator,
 )
@@ -134,8 +135,10 @@ class UpdateUser:
 
     def _get_user(self) -> None:
         result = (
-            self._session.execute(select(User).where(User.id == self._request.id))
-        ).scalar_one_or_none()
+            (self._session.execute(select(User).where(User.id == self._request.id)))
+            .unique()
+            .scalar_one_or_none()
+        )
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado"
@@ -309,7 +312,7 @@ class GetUsers:
         self._log = Log()
         self._session = session
 
-    def execute(self) -> BasicResponse[list[ResponseGetUsers]]:
+    def execute(self) -> BasicResponse[list[ResponseGetUser]]:
         try:
             self._log.info("Trying to get users")
             self._get_users()
@@ -325,15 +328,28 @@ class GetUsers:
             )
 
     def _get_users(self) -> None:
-        result = self._session.execute(select(User).where(User.enabled))
+        result = self._session.execute(select(User).options(joinedload(User.pets)).where(User.enabled))
         self._users = [
-            ResponseGetUsers(
+            ResponseGetUser(
                 id=user.id,
                 name=user.name,
                 cpf_cnpj=user.cpf_cnpj,
                 email=user.email,
                 address=user.address,
                 phone=user.phone,
+                pets=[
+                    GetPetResponse(
+                        pet_id=pet.id,
+                        name=pet.name,
+                        breed=pet.breed,
+                        weight=pet.weight,
+                        color=pet.color,
+                        kind=pet.kind,
+                        castred=pet.castred,
+                        enabled=pet.enabled,                    
+                    )
+                    for pet in user.pets
+                ],
             )
             for user in result.unique().scalars().all()
         ]
@@ -372,3 +388,60 @@ class DeleteUser:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado"
             )
         self._user = result
+
+
+class UpdateUserPets:
+    def __init__(self, session: Session, user_id: int):
+        self._session = session
+        self._user_id = user_id
+
+    def _load_user(self) -> None:
+        result = self._session.get(User, self._user_id)
+        if result is None:
+            raise HTTPException(
+                detail="Usuário não encontrado", status_code=status.HTTP_404_NOT_FOUND
+            )
+        self._user = result
+
+    def add_pet(self, pet_data: PostPet) -> BasicResponse[None]:
+        try:
+            self._load_user()
+            pet = Pet(
+                name=pet_data.name,
+                breed=pet_data.breed,
+                castred=pet_data.castred,
+                weight=pet_data.weight,
+                color=pet_data.color,
+                kind=pet_data.kind,
+                user_id=self._user.id,
+            )
+            self._session.add(pet)
+            self._session.commit()
+            return BasicResponse(message="Pet adicionado com sucesso.")
+        except Exception as e:
+            self._session.rollback()
+            raise HTTPException(
+                detail=f"Erro ao adicionar pet: {str(e)}",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def remove_pet(self, pet_id: int) -> BasicResponse[None]:
+        try:
+            self._load_user()
+            pet = self._session.get(Pet, pet_id)
+            if not pet or pet.user_id != self._user_id:
+                raise HTTPException(
+                    detail="Pet não encontrado ou não pertence ao usuário.",
+                    status_code=status.HTTP_404_NOT_FOUND,
+                )
+            self._session.delete(pet)
+            self._session.commit()
+            return BasicResponse(message="Pet removido com sucesso.")
+        except HTTPException:
+            raise
+        except Exception as e:
+            self._session.rollback()
+            raise HTTPException(
+                detail=f"Erro ao remover pet: {str(e)}",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

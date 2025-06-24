@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime, time
+from typing import Any, List
 
 from sqlalchemy import (
-    ARRAY,
     Boolean,
     DateTime,
     Float,
@@ -20,6 +20,7 @@ from sqlalchemy.orm import (
     declarative_base,
     mapped_column,
     DeclarativeBase,
+    relationship,
 )
 
 from src.schemas.user import SchemaCreateUser
@@ -41,8 +42,8 @@ class User(Base):  # type: ignore[valid-type, misc]
     __tablename__ = "user"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    cpf_cnpj: Mapped[str] = mapped_column(String)
     name: Mapped[str] = mapped_column(String)
-    cpf_cnpj: Mapped[str] = mapped_column(String, unique=True)
     email: Mapped[str] = mapped_column(String, unique=True)
     password: Mapped[str] = mapped_column(String)
     address: Mapped[str] = mapped_column(String)
@@ -54,6 +55,10 @@ class User(Base):  # type: ignore[valid-type, misc]
         DateTime, server_default=func.now(), onupdate=func.now()
     )
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
+
+    pets: Mapped[List["Pet"]] = relationship(
+        "Pet", back_populates="owner", cascade="all, delete", lazy="joined"
+    )
 
     @staticmethod
     def add_user(session: Session, new_user: SchemaCreateUser) -> None:
@@ -73,14 +78,58 @@ class Pet(Base):  # type: ignore[valid-type, misc]
     __tablename__ = "pet"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[int | None] = mapped_column(ForeignKey("user.id"))
     name: Mapped[str] = mapped_column(String)
-    breed: Mapped[str] = mapped_column(String)
-    weight: Mapped[float] = mapped_column(Float)
-    color: Mapped[str] = mapped_column(String)
-    kind: Mapped[list[int]] = mapped_column(ARRAY(Integer))
+    breed: Mapped[str] = mapped_column(String, nullable=True)
+    weight: Mapped[float] = mapped_column(Float, nullable=True)
+    color: Mapped[str] = mapped_column(String, nullable=True)
+    kind: Mapped[int] = mapped_column(Integer)
     castred: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+    owner: Mapped["User"] = relationship("User", back_populates="pets", lazy="joined")
+
+    @staticmethod
+    def add_pet(
+        session: Session,
+        name: str,
+        breed: str,
+        weight: float,
+        color: str,
+        kind: list[int],
+        user_id: int | None = None,
+    ) -> "Pet":
+        pet = Pet(
+            name=name,
+            breed=breed,
+            weight=weight,
+            color=color,
+            kind=kind,
+        )
+        if user_id:
+            user = session.get(User, user_id)
+            if user:
+                pet.users.append(user)
+        session.add(pet)
+        session.commit()
+        return pet
+
+    @staticmethod
+    def update_pet(session: Session, pet_id: int, **kwargs: Any) -> Pet | None:
+        pet = session.get(Pet, pet_id)
+        if not pet:
+            return None
+        for key, value in kwargs.items():
+            if hasattr(pet, key) and value is not None:
+                setattr(pet, key, value)
+        session.commit()
+        return pet
+
+    @staticmethod
+    def delete_pet(session: Session, pet_id: int) -> None:
+        pet = session.get(Pet, pet_id)
+        if pet:
+            session.delete(pet)
+            session.commit()
 
 
 class ScheduledFeeding(Base):  # type: ignore[valid-type, misc]
