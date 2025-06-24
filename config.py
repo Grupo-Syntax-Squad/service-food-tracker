@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     default_user_password: str
     default_user_device_token: str
     firebase_credentials_path: str
+    default_pet_name: str
+    default_pet_breed: str
+    default_pet_color: str
 
     model_config = SettingsConfigDict(env_file=".env")
 
