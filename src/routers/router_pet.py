@@ -3,10 +3,10 @@ from src.database import DatabaseConnection
 from src.modules.auth_handler import AuthHandler
 from sqlalchemy.orm import Session
 
-from src.modules.pet import CreatePet, GetPet
+from src.modules.pet import CreatePet, GetPet, UpdatePet
 from src.schemas.auth import UserDataToken
 from src.schemas.basic_response import BasicResponse
-from src.schemas.pet import GetPetResponse, PostPet
+from src.schemas.pet import GetPetResponse, PostPet, PutPet
 
 
 router = APIRouter(prefix="/pets", tags=["Pets"])
@@ -17,12 +17,7 @@ def get_pets(
     current_user: UserDataToken = Depends(AuthHandler().get_current_user),
     session: Session = Depends(DatabaseConnection().get_db_session),
 ) -> BasicResponse[list[GetPetResponse]]:
-    response = GetPet(session).execute()
-    if type(response) is BasicResponse[list[GetPetResponse]]:
-        return response
-    raise HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro interno"
-    )
+    return GetPet(session).execute()
 
 
 @router.get("/{id}")
@@ -31,12 +26,7 @@ def get_pet(
     current_user: UserDataToken = Depends(AuthHandler().get_current_user),
     session: Session = Depends(DatabaseConnection().get_db_session),
 ) -> BasicResponse[GetPetResponse]:
-    response = GetPet(session, id).execute()
-    if type(response) is BasicResponse[GetPetResponse]:
-        return response
-    raise HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro interno"
-    )
+    return GetPet(session, id).execute()
 
 
 @router.post("/")
@@ -51,10 +41,8 @@ def create_pet(
 @router.put("/{id}")
 def update_pet(
     id: int,
-    request: PostPet,
+    request: PutPet,
     current_user: UserDataToken = Depends(AuthHandler().get_current_user),
     session: Session = Depends(DatabaseConnection().get_db_session),
 ) -> BasicResponse[None]:
-    raise HTTPException(
-        status_code=status.HTTP_425_TOO_EARLY, detail="Em desenvolvimento"
-    )
+    return UpdatePet(session, request, id).execute()

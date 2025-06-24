@@ -3,6 +3,7 @@ from typing import Any, Callable, Type, TypeVar
 from dotenv import load_dotenv
 
 load_dotenv()
+print("DATABASE_URL raw:", repr(os.getenv("DATABASE_URL")))
 
 
 T = TypeVar("T")

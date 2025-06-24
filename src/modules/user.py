@@ -1,8 +1,8 @@
 import re
 from fastapi import HTTPException, status
-from src.schemas.pet import PostPet
+from src.schemas.pet import GetPetResponse, PostPet
 from sqlalchemy import or_, select, update
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from src.database.model import Pet, User
 from src.modules.log import Log
@@ -10,7 +10,7 @@ from src.schemas.basic_response import BasicResponse
 from src.schemas.user import (
     RequestCreateUser,
     RequestUpdateUser,
-    ResponseGetUsers,
+    ResponseGetUser,
     SchemaCreateUser,
     SchemaUserDataValidator,
 )
@@ -312,7 +312,7 @@ class GetUsers:
         self._log = Log()
         self._session = session
 
-    def execute(self) -> BasicResponse[list[ResponseGetUsers]]:
+    def execute(self) -> BasicResponse[list[ResponseGetUser]]:
         try:
             self._log.info("Trying to get users")
             self._get_users()
@@ -328,15 +328,28 @@ class GetUsers:
             )
 
     def _get_users(self) -> None:
-        result = self._session.execute(select(User).where(User.enabled))
+        result = self._session.execute(select(User).options(joinedload(User.pets)).where(User.enabled))
         self._users = [
-            ResponseGetUsers(
+            ResponseGetUser(
                 id=user.id,
                 name=user.name,
                 cpf_cnpj=user.cpf_cnpj,
                 email=user.email,
                 address=user.address,
                 phone=user.phone,
+                pets=[
+                    GetPetResponse(
+                        pet_id=pet.id,
+                        name=pet.name,
+                        breed=pet.breed,
+                        weight=pet.weight,
+                        color=pet.color,
+                        kind=pet.kind,
+                        castred=pet.castred,
+                        enabled=pet.enabled,                    
+                    )
+                    for pet in user.pets
+                ],
             )
             for user in result.unique().scalars().all()
         ]

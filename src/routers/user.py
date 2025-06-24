@@ -44,23 +44,3 @@ router = APIRouter(prefix="/users", tags=["Users"])
 #     return UpdateUser(id, request, session)
 
 
-@router.post("/{id}/add_pet", response_model=BasicResponse[None])
-def add_pet_to_user(
-    id: int,
-    request: PostPet,
-    current_user: UserDataToken = Depends(AuthHandler().get_current_user),
-    session: Session = Depends(DatabaseConnection().get_db_session),
-) -> BasicResponse[None]:
-    service = UpdateUserPets(session, id)
-    return service.add_pet(request)
-
-
-@router.delete("/{id}/remove_pet/{pet_id}", response_model=BasicResponse[None])
-def remove_pet_from_user(
-    id: int,
-    pet_id: int,
-    current_user: UserDataToken = Depends(AuthHandler().get_current_user),
-    session: Session = Depends(DatabaseConnection().get_db_session),
-) -> BasicResponse[None]:
-    service = UpdateUserPets(session, id)
-    return service.remove_pet(pet_id)

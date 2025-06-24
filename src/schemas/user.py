@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from src.schemas.pet import GetPetResponse
+
 
 class RequestCreateUser(BaseModel):
     name: str
@@ -10,13 +12,17 @@ class RequestCreateUser(BaseModel):
     password: str
 
 
-class ResponseGetUsers(BaseModel):
+class ResponseGetUser(BaseModel):
     id: int
     name: str
     cpf_cnpj: str
     email: str
     phone: str
     address: str
+    pets: list[GetPetResponse]
+
+    class Config:
+        orm_mode = True
 
 
 class RequestUpdateUser(BaseModel):

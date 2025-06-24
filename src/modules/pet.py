@@ -1,17 +1,17 @@
 from enum import Enum
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from src.modules.log import Log
 from sqlalchemy.orm import Session
 
 from src.database.model import Pet
 from src.schemas.basic_response import BasicResponse
-from src.schemas.pet import GetPetResponse, PostPet
+from src.schemas.pet import GetPetResponse, PostPet, PutPet
 
 
 class Operation(Enum):
     ONE_PET = "One pet"
     ALL_PETS = "All pets"
-
 
 class GetPet:
     def __init__(self, session: Session, pet_id: int | None = None):
@@ -74,7 +74,6 @@ class GetPet:
             enabled=pet.enabled,
         )
 
-
 class CreatePet:
     def __init__(self, session: Session, request: PostPet):
         self.session = session
@@ -108,3 +107,53 @@ class CreatePet:
         session.flush()
         session.refresh(pet)
         return pet
+    
+class UpdatePet:
+    def __init__(self,  session: Session, request: PutPet, id: int | None = None):
+        try:
+            self._log = Log()
+            self._session = session
+            self._pet_id = id
+            self._request = request
+            print(self._request)
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            self._log.error("Error updating pet: %s", str(e))
+            raise HTTPException(
+                detail="Erro interno",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+    
+    def execute(self) -> BasicResponse[None]:
+        self._get_pet()
+        self._update_pet()
+        self._session.commit()
+        self._log.info("Pet updated successfully")
+        return BasicResponse()
+
+    def _get_pet(self) -> None:
+        result = (
+            self._session.execute(select(Pet).where(Pet.id == self._pet_id))
+        ).unique().scalar_one_or_none()
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Pet não encontrado"
+            )
+        self._pet: Pet = result
+
+    def _update_pet(self):
+        if self._request.name:
+            self._pet.name = self._request.name
+        if self._request.breed:
+            self._pet.breed = self._request.breed
+        if self._request.kind:
+            self._pet.kind = self._request.kind
+        if self._request.castred is not None:
+            self._pet.castred = self._request.castred
+        if self._request.color:
+            self._pet.color = self._request.color
+        if self._request.weight:
+            self._pet.weight = self._request.weight
+        self._session.add(self._pet)
+        self._session.flush()

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, List
 
 from sqlalchemy import (
     Boolean,
@@ -54,7 +54,7 @@ class User(Base):  # type: ignore[valid-type, misc]
     )
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
 
-    pets = relationship(
+    pets: Mapped[List["Pet"]] = relationship(
         "Pet", back_populates="owner", cascade="all, delete", lazy="joined"
     )
 
@@ -84,7 +84,7 @@ class Pet(Base):  # type: ignore[valid-type, misc]
     castred: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
-    owner = relationship("User", back_populates="pets", lazy="joined")
+    owner: Mapped["User"] = relationship("User", back_populates="pets", lazy="joined")
 
     @staticmethod
     def add_pet(
