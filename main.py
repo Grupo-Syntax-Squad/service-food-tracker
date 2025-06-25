@@ -11,6 +11,7 @@ from src.database import DatabaseConnection
 from src.database.model import Pet
 from src.modules.lifespan import LifespanHandler
 from src.modules.notificator import UserNotificator
+from src.modules.scheduler import start_scheduler
 from src.schemas.common import BasicResponse
 from src.schemas.detection import Detection, DetectionRequest
 from src.modules.json_handler import JSONHandler
@@ -24,6 +25,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(lifespan=lifespan)
+start_scheduler()
 
 
 def custom_openapi() -> dict[str, Any]:
@@ -64,9 +66,7 @@ async def detectar(
 ) -> BasicResponse[Detection]:
     detection = Detection(timestamp=request.timestamp)
     JSONHandler(settings.json_file_path).save_in_json(detection)
-    pet = session.execute(
-        select(Pet).where(Pet.id == request.pet_id)
-    ).scalar_one_or_none()
+    pet = session.execute(select(Pet).where(Pet.id == 1)).scalar_one_or_none()
     if pet is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Pet não encontrado"

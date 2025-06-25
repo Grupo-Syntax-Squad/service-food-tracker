@@ -89,4 +89,5 @@ class ScheduledFeeding(Base):  # type: ignore[valid-type, misc]
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     feeding_time: Mapped[time] = mapped_column(Time)
     enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
+    notified: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
     pet_id: Mapped[int] = mapped_column(ForeignKey("pet.id"))

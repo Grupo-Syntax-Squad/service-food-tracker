@@ -18,3 +18,6 @@ class DatabaseConnection:
             yield session
         finally:
             session.close()
+
+    def create_session(self) -> Session:
+        return self._sessionmaker()

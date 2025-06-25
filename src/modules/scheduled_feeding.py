@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.database.model import Pet, ScheduledFeeding
+from src.modules.notificator import UserNotificator
 from src.schemas.scheduled_feeding import RequestCreateScheduledFeeding
 from src.schemas.common import BasicResponse
 from src.modules.log import Log
@@ -69,10 +70,47 @@ class CreateScheduledFeeding:
         self._session.flush()
 
 
-# TODO: Implementar essa classe futuramente
 class ScheduledFeedingManager:
     def __init__(self, session: Session) -> None:
         self._log = Log()
         self._session = session
+        self._notificator = UserNotificator(session)
 
-    def execute(self) -> None: ...
+    def execute(self) -> None:
+        try:
+            self._log.info(
+                "Trying to notificate all users based on their pets scheduled feedings"
+            )
+            now = datetime.datetime.now()
+            scheduled_feedings = self._get_all_scheduled_feedings()
+            for scheduled in scheduled_feedings:
+                feeding_datetime = now.replace(
+                    hour=scheduled.feeding_time.hour,
+                    minute=scheduled.feeding_time.minute,
+                    second=scheduled.feeding_time.second,
+                    microsecond=0,
+                )
+                if (
+                    scheduled.enabled
+                    and not scheduled.notified
+                    and now >= feeding_datetime
+                ):
+                    try:
+                        self._notificator.notificate(scheduled.pet)
+                        scheduled.notified = True
+                    except Exception as e:
+                        self._log.error(
+                            f"Erro ao notificar pet {scheduled.pet_id}: {str(e)}"
+                        )
+                elif scheduled.notified and now > (
+                    feeding_datetime + datetime.timedelta(minutes=30)
+                ):
+                    scheduled.notified = False
+            self._session.commit()
+            self._log.info("Users notificate successfully")
+        except Exception as e:
+            self._log.error("Error notificating users: %s", str(e))
+            raise e
+
+    def _get_all_scheduled_feedings(self) -> list[ScheduledFeeding]:
+        return self._session.query(ScheduledFeeding).join(ScheduledFeeding.pet).all()
