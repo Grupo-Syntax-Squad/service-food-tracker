@@ -328,7 +328,9 @@ class GetUsers:
             )
 
     def _get_users(self) -> None:
-        result = self._session.execute(select(User).options(joinedload(User.pets)).where(User.enabled))
+        result = self._session.execute(
+            select(User).options(joinedload(User.pets)).where(User.enabled)
+        )
         self._users = [
             ResponseGetUser(
                 id=user.id,
@@ -346,7 +348,7 @@ class GetUsers:
                         color=pet.color,
                         kind=pet.kind,
                         castred=pet.castred,
-                        enabled=pet.enabled,                    
+                        enabled=pet.enabled,
                     )
                     for pet in user.pets
                 ],
