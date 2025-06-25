@@ -95,7 +95,7 @@ class Pet(Base):  # type: ignore[valid-type, misc]
         breed: str,
         weight: float,
         color: str,
-        kind: list[int],
+        kind: int,
         user_id: int | None = None,
     ) -> "Pet":
         pet = Pet(

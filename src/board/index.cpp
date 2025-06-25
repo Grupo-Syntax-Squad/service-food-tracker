@@ -38,8 +38,8 @@ void loop() {
   timeClient.update();
 
   int motion = digitalRead(sensorPin);
-  if (motion == LOW) {
-    Serial.println("Movimento detectado!");
+  if (motion == HIGH) {
+    Serial.println("NENHUM movimento detectado!");
     Serial.println(motion);
     
     time_t rawTime = timeClient.getEpochTime();

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from src.database.model import Pet, ScheduledFeeding
 from src.modules.notificator import UserNotificator
 from src.schemas.scheduled_feeding import RequestCreateScheduledFeeding
-from src.schemas.common import BasicResponse
+from src.schemas.basic_response import BasicResponse
 from src.modules.log import Log
 
 

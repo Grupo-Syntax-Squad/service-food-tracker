@@ -64,7 +64,7 @@ class LifespanHandler:
             breed=settings.default_pet_breed,
             weight=8,
             color=settings.default_pet_color,
-            kind=[1],
+            kind=1,
         )
         self._session.add(new_default_pet)
         self._session.commit()

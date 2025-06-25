@@ -17,7 +17,7 @@ def get_pets(
     current_user: UserDataToken = Depends(AuthHandler().get_current_user),
     session: Session = Depends(DatabaseConnection().get_db_session),
 ) -> BasicResponse[list[GetPetResponse]]:
-    return GetPet(session).execute()
+    return GetPet(session).execute()  # type: ignore[return-value]
 
 
 @router.get("/{id}")
@@ -26,7 +26,7 @@ def get_pet(
     current_user: UserDataToken = Depends(AuthHandler().get_current_user),
     session: Session = Depends(DatabaseConnection().get_db_session),
 ) -> BasicResponse[GetPetResponse]:
-    return GetPet(session, id).execute()
+    return GetPet(session, id).execute()  # type: ignore[return-value]
 
 
 @router.post("/")

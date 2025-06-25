@@ -13,6 +13,7 @@ class Operation(Enum):
     ONE_PET = "One pet"
     ALL_PETS = "All pets"
 
+
 class GetPet:
     def __init__(self, session: Session, pet_id: int | None = None):
         self._log = Log()
@@ -74,6 +75,7 @@ class GetPet:
             enabled=pet.enabled,
         )
 
+
 class CreatePet:
     def __init__(self, session: Session, request: PostPet):
         self.session = session
@@ -107,9 +109,10 @@ class CreatePet:
         session.flush()
         session.refresh(pet)
         return pet
-    
+
+
 class UpdatePet:
-    def __init__(self,  session: Session, request: PutPet, id: int | None = None):
+    def __init__(self, session: Session, request: PutPet, id: int | None = None):
         try:
             self._log = Log()
             self._session = session
@@ -124,7 +127,7 @@ class UpdatePet:
                 detail="Erro interno",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-    
+
     def execute(self) -> BasicResponse[None]:
         self._get_pet()
         self._update_pet()
@@ -134,15 +137,17 @@ class UpdatePet:
 
     def _get_pet(self) -> None:
         result = (
-            self._session.execute(select(Pet).where(Pet.id == self._pet_id))
-        ).unique().scalar_one_or_none()
+            (self._session.execute(select(Pet).where(Pet.id == self._pet_id)))
+            .unique()
+            .scalar_one_or_none()
+        )
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Pet não encontrado"
             )
         self._pet: Pet = result
 
-    def _update_pet(self):
+    def _update_pet(self) -> None:
         if self._request.name:
             self._pet.name = self._request.name
         if self._request.breed:

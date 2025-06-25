@@ -6,7 +6,7 @@ from src.database import DatabaseConnection
 from src.modules.auth_handler import AuthHandler
 from src.modules.scheduled_feeding import CreateScheduledFeeding
 from src.schemas.auth import UserDataToken
-from src.schemas.common import BasicResponse
+from src.schemas.basic_response import BasicResponse
 from src.schemas.scheduled_feeding import RequestCreateScheduledFeeding
 
 
