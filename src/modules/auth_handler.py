@@ -51,9 +51,11 @@ class AuthHandler:
                 self._log.error("Error closing DB session: %s", str(close_error))
 
     def _get_user_by_email(self, email: str) -> User:
-        result = self._session.execute(
-            select(User).where(User.email == email, User.enabled)
-        ).scalar_one_or_none()
+        result = (
+            self._session.execute(select(User).where(User.email == email, User.enabled))
+            .unique()
+            .scalar_one_or_none()
+        )
         if result is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -62,10 +64,12 @@ class AuthHandler:
         return result
 
     def _hash_password(self, password: str) -> str:
-        return self._pwd_context.hash(password)
+        hashed_password: str = self._pwd_context.hash(password)
+        return hashed_password
 
     def _verify_password(self, password: str, hashed_password: str) -> bool:
-        return self._pwd_context.verify(password, hashed_password)
+        verification: bool = self._pwd_context.verify(password, hashed_password)
+        return verification
 
     def _create_access_token(self, user: User) -> str:
         token = UserDataToken(

@@ -12,10 +12,10 @@ from src.database.model import Pet
 from src.modules.lifespan import LifespanHandler
 from src.modules.notificator import UserNotificator
 from src.modules.scheduler import start_scheduler
-from src.schemas.common import BasicResponse
+from src.schemas.basic_response import BasicResponse
 from src.schemas.detection import Detection, DetectionRequest
 from src.modules.json_handler import JSONHandler
-from src.routers import router_scheduled_feeding, router_user, router_auth
+from src.routers import router_scheduled_feeding, router_user, router_auth, router_pet
 
 
 @asynccontextmanager
@@ -78,3 +78,4 @@ async def detectar(
 app.include_router(router_user.router)
 app.include_router(router_auth.router)
 app.include_router(router_scheduled_feeding.router)
+app.include_router(router_pet.router)
